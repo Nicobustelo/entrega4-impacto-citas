@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Se puede anticipar el impacto?</title>
+<meta name="description" content="Proyecto Integrador de Ciencia de Datos · Grupo 10 (5K09) · UTN FRM · 2026. Impacto en citas de artículos de Ciencia de Materiales de 2019 (OpenAlex).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/vega@{{VEGA}}"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@{{VEGA_LITE}}"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@{{VEGA_EMBED}}"></script>
+<style>
+/* Concepto: un artículo de revista impreso en una sola hoja larga sobre un escritorio, con el índice fijo arriba. */
+:root {
+  color-scheme: light;
+  --papel: #fdfcf8;      /* hoja */
+  --tinta: #1c1b19;      /* texto */
+  --tinta-2: #4a4740;    /* texto secundario */
+  --gris: #8a857a;       /* notas, filetes */
+  --filete: #d9d4c7;
+  --enlace: #1f4e8c;     /* azul de hipervínculo (hyperref) */
+  --naranja: #c9552a;    /* top 10 % / candidato: el mismo de los gráficos */
+  --mesa: #3b4148;       /* escritorio */
+  --mesa-2: #2c3137;
+  --serif: "STIX Two Text", "Times New Roman", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; color: var(--tinta); font: 17px/1.55 var(--serif);
+  background: var(--mesa-2) radial-gradient(120% 70% at 50% 0%, var(--mesa) 0%, var(--mesa-2) 75%) no-repeat;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  font-kerning: normal; font-variant-ligatures: common-ligatures; hyphens: auto;
+}
+a { color: var(--enlace); }
+code { font: 0.82em var(--mono); background: #f1eee5; padding: .05em .3em; border-radius: 2px; hyphens: none; }
+kbd { font: 0.85em var(--mono); border: .5px solid var(--gris); border-radius: 3px; padding: 0 .3em; }
+:focus-visible { outline: 2px solid var(--enlace); outline-offset: 2px; }
+h1:focus, h2:focus { outline: none; }
+
+/* ---------- el documento: una hoja larga sobre el escritorio ---------- */
+.documento {
+  width: min(1120px, 100%); margin: 22px auto 56px; border-radius: 2px;
+  background-color: var(--papel);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35  0 0 0 0 .3  0 0 0 0 .2  0 0 0 .05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 24px 60px rgba(0,0,0,.45);
+}
+.hoja { scroll-margin-top: 16px; }
+.hoja + .hoja { border-top: 1.5px solid var(--tinta); margin: 0 clamp(20px, 5vw, 64px); }
+.hoja + .hoja > .cuerpo { padding-inline: 0; }
+.cuerpo { padding: 40px clamp(20px, 5vw, 64px) 36px; }
+.pie-doc { text-align: center; font: 12px var(--mono); color: var(--gris); padding: 4px 0 26px; }
+
+/* ---------- tipografía de paper ---------- */
+.seccion { font: 600 13px var(--serif); letter-spacing: .14em; text-transform: uppercase; color: var(--tinta-2); margin: 0 0 6px; }
+.seccion.copa { color: var(--naranja); }
+h1, h2 { font-family: var(--serif); font-weight: 600; text-wrap: balance; letter-spacing: -.005em; }
+h1 { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.14; margin: 10px auto 14px; text-align: center; max-width: 24em; }
+h2 { font-size: clamp(22px, 2.4vw, 29px); line-height: 1.2; margin: 2px 0 14px; max-width: 30em; }
+h3 { font: 600 clamp(19px, 2vw, 23px)/1.25 var(--serif); margin: 30px 0 10px; max-width: 34em; text-wrap: balance; }
+h4 { font: 600 15px var(--serif); margin: 18px 0 4px; }
+p { margin: 0 0 .7em; }
+.dos-col { columns: 2 22em; column-gap: 36px; column-rule: .5px solid var(--filete); text-align: justify; }
+.capitular::first-letter { float: left; font-size: 3.3em; line-height: .82; padding: 6px 6px 0 0; font-weight: 600; color: var(--enlace); }
+
+.revista { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 18px; font: 12px var(--mono); color: var(--tinta-2);
+  border-top: 2px solid var(--tinta); border-bottom: .5px solid var(--tinta); padding: 6px 0; letter-spacing: .02em; }
+.autores { text-align: center; font-size: 17px; margin: 4px 0 2px; }
+.afil { text-align: center; font-size: 13.5px; color: var(--tinta-2); font-style: italic; margin-bottom: 18px; }
+.resumen { border-top: .5px solid var(--tinta); border-bottom: .5px solid var(--tinta); padding: 12px 0 10px; margin: 0 auto 16px; max-width: 900px; }
+.resumen .rotulo { font-weight: 700; font-variant-caps: all-small-caps; letter-spacing: .08em; font-size: 15px; margin-right: 6px; }
+.resumen p { text-align: justify; margin: 0; }
+.tesis { font-size: clamp(19px, 2vw, 23px); line-height: 1.42; font-style: italic; text-align: center; max-width: 820px; margin: 18px auto; text-wrap: balance; }
+.destacados { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 940px; margin: 8px auto 14px; border-top: 1.5px solid var(--tinta); border-bottom: 1.5px solid var(--tinta); }
+.destacados > div { padding: 12px 18px; }
+.destacados > div + div { border-left: .5px solid var(--filete); }
+.destacados b { display: block; font: 600 34px/1.05 var(--serif); font-variant-numeric: lining-nums tabular-nums; color: var(--enlace); margin-bottom: 4px; }
+.destacados .naranja b { color: var(--naranja); }
+.destacados span { font-size: 14px; color: var(--tinta-2); line-height: 1.4; display: block; }
+.claves { font-size: 14px; color: var(--tinta-2); text-align: center; }
+.claves i { font-variant-caps: all-small-caps; letter-spacing: .06em; font-style: normal; font-weight: 700; color: var(--tinta); }
+.nota { font-size: 13.5px; color: var(--tinta-2); }
+.centro { text-align: center; }
+
+figure { margin: 16px 0 6px; }
+.grafico, .grafico.vega-embed { display: block; width: 100%; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
+figcaption { font-size: 14.5px; line-height: 1.45; color: var(--tinta-2); max-width: 58em; margin-top: 6px; border-top: .5px solid var(--filete); padding-top: 8px; }
+figcaption b { color: var(--tinta); font-weight: 700; }
+.leyenda-col { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--tinta-2); margin: 4px 0; }
+.leyenda-col i { display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px; }
+
+/* «Cómo lo sabemos»: un apéndice plegado */
+details { margin: 18px 0 4px; border: .5px solid var(--tinta-2); background: rgba(255,255,255,.55); }
+summary { cursor: pointer; padding: 9px 14px; font-weight: 600; list-style: none; display: flex; align-items: baseline; gap: 10px; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "▸"; color: var(--enlace); transition: transform .2s; }
+details[open] summary::before { transform: rotate(90deg); }
+summary small { font: 12px var(--mono); color: var(--gris); font-weight: 400; margin-left: auto; }
+details > div { padding: 2px 18px 14px; border-top: .5px solid var(--filete); }
+details p { max-width: 62em; }
+
+/* tablas tipo booktabs */
+.tabla { overflow-x: auto; margin: 8px 0 14px; }
+table { border-collapse: collapse; font-size: 13.5px; width: 100%; border-top: 1.5px solid var(--tinta); border-bottom: 1.5px solid var(--tinta); font-variant-numeric: lining-nums tabular-nums; }
+thead th { border-bottom: .75px solid var(--tinta); font-weight: 600; text-align: left; padding: 6px 10px; vertical-align: bottom; }
+td { padding: 4px 10px; vertical-align: top; }
+tbody tr:nth-child(even) td { background: rgba(28,27,25,.025); }
+
+/* ecuación */
+.ecuacion { display: flex; align-items: center; justify-content: center; gap: 24px; margin: 10px 0 12px; font-size: 17px; }
+.ecuacion .num { color: var(--tinta-2); font-size: 15px; }
+.ecuacion var, .nota var { font-style: italic; }
+
+/* controles de la copa */
+.controles { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; border-top: .5px solid var(--tinta-2); border-bottom: .5px solid var(--tinta-2); padding: 8px 0; margin: 10px 0 4px; }
+.vega-bind { font-size: 14.5px; }
+.vega-bind-name { font-weight: 600; margin-right: 6px; }
+.vega-bind select { font: 14px var(--serif); max-width: 250px; padding: 3px 6px; border: .5px solid var(--tinta-2); background: var(--papel); color: var(--tinta); border-radius: 2px; }
+.vega-bind input[type=range], .vega-bind input[type=radio], .vega-bind input[type=checkbox] { accent-color: var(--enlace); vertical-align: middle; }
+.probar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); gap: 28px; align-items: start; margin-top: 10px; }
+.deslizadores fieldset { border: 0; border-top: .5px solid var(--tinta-2); margin: 0 0 8px; padding: 4px 0 6px; min-width: 0; }
+.deslizadores legend { font-weight: 700; font-variant-caps: all-small-caps; letter-spacing: .08em; font-size: 15px; padding-right: 8px; }
+.slot .vega-bind { padding: 3px 0; }
+.slot .vega-bind label { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.slot .vega-bind-name { flex: 1 0 100%; font-weight: 500; font-size: 14px; }
+.slot input[type=range] { flex: 1; min-width: 120px; }
+.slot .vega-bind label > span:last-child { font: 13px var(--mono); }
+.resultado { position: sticky; top: 16px; border: .5px solid var(--tinta-2); background: rgba(255,255,255,.7); padding: 14px 16px; }
+.ejemplo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0 10px; font-size: 14.5px; }
+.ejemplo select { font: 14px var(--serif); max-width: 100%; padding: 4px 6px; border: .5px solid var(--tinta-2); background: var(--papel); color: var(--tinta); border-radius: 2px; }
+.boton { font: 600 14px var(--serif); padding: 5px 12px; border: .75px solid var(--tinta); background: transparent; color: var(--tinta); cursor: pointer; border-radius: 2px; }
+.boton:hover { background: var(--tinta); color: var(--papel); }
+.aviso { border-left: 2px solid var(--naranja); padding: 4px 0 4px 12px; font-size: 14.5px; max-width: 60em; }
+#dijo { font-size: 14px; color: var(--tinta-2); min-height: 1.3em; margin: 8px 0 0; }
+
+.referencias { list-style: none; padding: 0; font-size: 15px; max-width: 62em; }
+.referencias li { padding-left: 2.2em; text-indent: -2.2em; margin-bottom: 6px; }
+
+/* ---------- índice lateral: el tallo y la copa ---------- */
+.indice-lat { position: fixed; top: env(safe-area-inset-top, 0px); bottom: 0; left: 0; width: 260px; overflow-y: auto; z-index: 9;
+  padding: 26px 22px 26px max(22px, env(safe-area-inset-left, 0px));
+  background-color: var(--papel); border-right: .5px solid var(--filete); box-shadow: 4px 0 24px rgba(0,0,0,.25); }
+.indice-lat .marca { font: 12px/1.45 var(--mono); color: var(--gris); letter-spacing: .02em; margin: 0 0 6px; padding-bottom: 12px; border-bottom: 2px solid var(--tinta); }
+.indice-lat h3 { font: 700 14px var(--serif); font-variant-caps: all-small-caps; letter-spacing: .1em; margin: 22px 0 6px; }
+.indice-lat .tallo h3 { color: var(--enlace); }
+.indice-lat .copa h3 { color: var(--naranja); }
+.indice-lat ol { list-style: none; margin: 0; padding: 0; counter-reset: paso; }
+.indice-lat li { counter-increment: paso; }
+.indice-lat li a { display: block; position: relative; padding: 5px 8px 5px 32px; color: var(--tinta); text-decoration: none; font-size: 15.5px; line-height: 1.3; border-radius: 2px; }
+.indice-lat li a::before { content: counter(paso); position: absolute; left: 8px; top: 6px; font: 12px var(--mono); color: var(--gris); }
+.indice-lat li a:hover { background: rgba(28,27,25,.05); }
+.indice-lat .tallo li a[aria-current="true"] { box-shadow: inset 2px 0 0 var(--enlace); background: rgba(31,78,140,.07); }
+.indice-lat .copa li a[aria-current="true"] { box-shadow: inset 2px 0 0 var(--naranja); background: rgba(201,85,42,.08); }
+.indice-lat .nota { margin-top: 12px; }
+.indice-lat .copa-svg { display: block; width: 100%; max-width: 200px; margin-top: 22px; }
+.con-indice { margin-left: 260px; }
+
+@media (max-width: 1100px) {
+  .indice-lat { position: static; width: auto; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 14px max(16px, env(safe-area-inset-left, 0px)); box-shadow: none; border-right: 0; border-bottom: .5px solid var(--filete); }
+  .indice-lat .marca, .indice-lat .nota, .indice-lat .copa-svg { display: none; }
+  .indice-lat .partes { display: flex; flex-wrap: wrap; gap: 4px 28px; }
+  .indice-lat h3 { margin: 4px 0; }
+  .indice-lat ol { display: flex; flex-wrap: wrap; gap: 2px 6px; }
+  .con-indice { margin-left: 0; }
+}
+
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+  .destacados { grid-template-columns: 1fr; }
+  .destacados > div + div { border-left: 0; border-top: .5px solid var(--filete); }
+  .probar { grid-template-columns: minmax(0, 1fr); }
+  .slot input[type=range] { min-width: 0; }
+  .resultado { position: static; }
+  .documento { margin-top: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } summary::before { transition: none; } }
+</style>
+</head>
+<body>
+<nav class="indice-lat" aria-label="Índice">
+  <p class="marca">Cuadernos de Ciencia de Datos<br>UTN FRM · 2026 · Grupo 10 · 5K09</p>
+  <div class="partes">
+  <div class="tallo"><h3>La historia</h3><ol>
+    <li><a href="#portada">El proyecto</a></li>
+    <li><a href="#datos">Los datos</a></li>
+    <li><a href="#hallazgos">Lo que encontramos</a></li>
+    <li><a href="#modelo">El modelo</a></li></ol></div>
+  <div class="copa"><h3>Tu turno</h3><ol>
+    <li><a href="#explora">Explorá los artículos</a></li>
+    <li><a href="#proba">Probá el modelo</a></li></ol></div>
+  </div>
+  <p class="nota">La historia se lee en orden. En la copa las preguntas las hacés vos.</p>
+  <svg class="copa-svg" viewBox="0 0 200 132" aria-hidden="true">
+    <path d="M20 10 H180 L110 70 V104 H140 V112 H60 V104 H90 V70 Z" fill="none" stroke="#d9d4c7" stroke-width="1.5"/>
+    <path d="M44 30 H156 L110 66 H90 Z" fill="#c9552a" opacity=".16"/>
+    <text x="100" y="22" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="#8a857a">copa · tu turno</text>
+    <text x="100" y="127" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" fill="#8a857a">tallo · la historia</text>
+  </svg>
+</nav>
+<div class="con-indice">
+<main class="documento">
+
+<!-- ================= 1 · PORTADA ================= -->
+<section class="hoja" id="portada" data-parte="tallo" data-titulo="El proyecto">
+ <div class="cuerpo">
+  <div class="revista"><span>Proyecto Integrador · Vol. 2026 · Entrega 4</span><span>Datos: OpenAlex · corte del {{fecha_datos}}</span></div>
+  <p class="seccion centro" style="margin-top:20px">Artículo de investigación · El proyecto</p>
+  <h1>¿Se puede anticipar, el día que se publica, cuánto se va a citar un artículo de Ciencia de Materiales?</h1>
+  <p class="autores">Nicolás Bustelo<sup>1</sup> · Joaquín Cuello<sup>1</sup> · Augusto Lemos<sup>1</sup> · Juan Pablo Masuet<sup>1</sup> · Manuel Vazquez<sup>1</sup></p>
+  <p class="afil"><sup>1</sup> Universidad Tecnológica Nacional, Facultad Regional Mendoza · Ciencia de Datos · Grupo 10, comisión 5K09</p>
+  <div class="resumen"><p><span class="rotulo">Resumen.</span>Seguimos {{n}} artículos de Ciencia de Materiales publicados en revistas en 2019,
+  desde su publicación hasta octubre de 2026, y para cada uno miramos sólo lo que se sabía el día que salió: la revista, la bibliografía, los autores y sus instituciones.
+  Con esas 12 columnas entrenamos un regresor para las citas y un clasificador para el 10 % más citado de cada subtema.</p></div>
+  <p class="tesis">Con lo que se sabe el día de la publicación se explica el {{r2_pct}} de la variación de las citas, y de los artículos que el modelo marca
+  como candidatos a estar entre los más citados, uno de cada dos lo está: {{lift}} veces más que eligiendo al azar.</p>
+  <div class="destacados" role="list">
+    <div role="listitem"><b>{{r2}}</b><span>de R² en el test para log(1 + citas), contra 0 del piso que predice siempre la mediana.</span></div>
+    <div role="listitem" class="naranja"><b>{{prec}}</b><span>de los candidatos a top 10 % lo fueron de verdad, contra el {{base}} al azar.</span></div>
+    <div role="listitem"><b>{{q_pm1}}</b><span>de los artículos del test cae en su tercio de citas o en el vecino; el {{q_acc}}, exactamente en el suyo.</span></div>
+  </div>
+  <p class="claves"><i>Palabras clave:</i> bibliometría · OpenAlex · Ciencia de Materiales · regresión · clasificación desbalanceada · umbral de decisión</p>
+  <p class="nota centro">Las secciones §1 a §3 cuentan la historia en orden; S1 y S2, al final, son para que explores los datos y pruebes el modelo vos.</p>
+ </div>
+</section>
+
+<!-- ================= 2 · LOS DATOS ================= -->
+<section class="hoja" id="datos" data-parte="tallo" data-titulo="Los datos">
+ <div class="cuerpo">
+  <p class="seccion">§1 · Los datos</p>
+  <h2>Las citas están muy concentradas: el tercio más citado se lleva el {{t3_citas}} de todas las citas</h2>
+  <figure>
+   <div class="grafico" id="g-datos"></div>
+   <figcaption><b>Figura 1.</b> (a) Artículos por tramo de citas acumuladas entre 2019 y octubre de 2026, coloreados por tercio de la población
+   (cortes en {{cortes}} citas, los mismos que usa el Objetivo 3 y la exploración). (b) El mismo tercio de artículos pesa muy distinto en citas.
+   La mitad de los artículos tiene {{mediana}} citas o menos y el {{cero}} no tiene ninguna, pero la cola llega a {{max}}: el tercio bajo junta el
+   {{t1_citas}} de las citas y el alto el {{t3_citas}}. Por eso el modelo predice <code>log(1 + citas)</code> y no las citas crudas.</figcaption>
+  </figure>
+  <details><summary>Cómo lo sabemos <small>apéndice A</small></summary><div>
+    <h4>De dónde salen y cómo se obtienen</h4>
+    <p>De la API de OpenAlex, con un DAG de Apache Airflow (<code>openalex_ingest</code>) en arquitectura medallón: un sensor verifica que la API responda,
+    <code>land_bronze</code> baja una muestra aleatoria de artículos (<code>type:article</code>, campo Materials Science, publicados en 2019, con abstract y no retractados),
+    <code>refine_silver</code> los aplana a una fila por artículo, <code>enrich_silver</code> les suma la historia previa de la revista, los autores y las instituciones
+    (endpoints <code>/sources</code>, <code>/authors</code> e <code>/institutions</code>, contando sólo trabajos de 2012–2018), y <code>validate</code> controla el esquema.
+    Si la API no responde, una rama carga el último respaldo congelado (<code>include/frozen/ultimo_ok.csv.gz</code>), que es el archivo que usa esta aplicación (fecha {{fecha_datos}}).
+    Todas las conclusiones valen para esta población: <b>un solo campo (Ciencia de Materiales) y un solo año (2019)</b>.</p>
+    <h4>Qué es una fila</h4>
+    <p>Un artículo (<em>work</em> de OpenAlex) con un <code>id</code> único. Hay {{n_revistas}} revistas distintas: por eso, además del <code>KFold</code> por artículo,
+    medimos qué pasa si los folds se arman por revista (§3).</p>
+    <h4>Qué se filtró y qué quedó</h4>
+    {{tabla_embudo}}
+    <h4>Qué columnas se descartaron por fuga</h4>
+    <p><b>Contienen la respuesta</b> (se calculan con las citas del propio artículo): <code>cited_by_count</code>, <code>fwci</code>, <code>citation_normalized_percentile_*</code>,
+    <code>cited_by_percentile_year_*</code>, <code>counts_by_year</code>; <code>citation_normalized_percentile_value ≥ 0,90</code> reproduce <code>is_top10_percent</code> en el 100 % de las filas.
+    <b>Crecen después de publicar</b>: <code>locations_count</code>, <code>indexed_in_count</code> y <code>mesh_count</code>. Las métricas de revista y autores sólo cuentan trabajos anteriores a 2019.</p>
+  </div></details>
+ </div>
+</section>
+
+<!-- ================= 3 · HALLAZGOS ================= -->
+<section class="hoja" id="hallazgos" data-parte="tallo" data-titulo="Lo que encontramos">
+ <div class="cuerpo">
+  <p class="seccion">§2 · Lo que encontramos</p>
+  <h2>La revista y la bibliografía se suman: con las dos en el quintil alto, el {{esq_alta}} de los artículos es top 10 %; con las dos en el bajo, el {{esq_baja}}</h2>
+  <figure>
+   <div class="grafico" id="g-hallazgo"></div>
+   <figcaption><b>Figura 2.</b> Porcentaje de artículos que terminaron en el 10 % más citado de su subtema y año (según OpenAlex), por quintil de prestigio previo de la
+   revista (columnas) y de cantidad de referencias (filas). En toda la población es el {{top10}}. El color crece hacia la derecha <em>y</em> hacia arriba: dentro de una
+   misma columna, más referencias sigue sumando. Las dos variables no dicen lo mismo, y por eso son las dos que más pesan en el modelo (§3).</figcaption>
+  </figure>
+  <details><summary>Cómo lo sabemos <small>apéndice B</small></summary><div>
+    <h4>Una hipótesis que se sostuvo (H2): el efecto del acceso abierto depende de si la revista es <em>core</em></h4>
+    <p>El tipo de acceso abierto (<code>oa_status</code>) solo explica η² = {{eta_oa}} de la varianza de log(1 + citas); cruzado con <code>source_is_core</code> sube a η² = {{eta_oa_core}}.
+    En las revistas <em>core</em> el {{core_top}} de los artículos es top 10 %, contra el {{nocore_top}} fuera de ellas. En el modelo multivariado la interacción explícita no suma
+    (cambio de MAE −0,0002 ± 0,0006 en Ridge): el prestigio continuo de la revista ya captura ese escalón.</p>
+    <h4>Una que no (H4): el mes de publicación no cambia las citas</h4>
+    <p>Esperábamos que los artículos de enero, con casi un año más de exposición, acumularan más citas. No pasa: la correlación de Spearman entre mes y citas es
+    ρ = {{rho_mes}}, y la mediana de enero ({{mes_ene}} citas) es prácticamente la de diciembre ({{mes_dic}}). Con más de seis años de exposición, unos meses no se ven.</p>
+    <h4>Cómo se construyó la figura</h4>
+    <p>Quintiles sobre el rango de cada variable (empates partidos por orden, para que cada quintil tenga el 20 % exacto). Los artículos sin historial de revista
+    (1 %) quedan afuera de esta vista. Spearman con las citas: {{rho_prest}} para el prestigio y {{rho_refs}} para las referencias. La escala de color se corta en 50 %.
+    <code>is_top10_percent</code> lo calcula OpenAlex comparando cada artículo con los de su mismo subtema y año: por eso un artículo con pocas citas puede ser top 10 % en un nicho chico.</p>
+  </div></details>
+ </div>
+</section>
+
+<!-- ================= 4 · EL MODELO ================= -->
+<section class="hoja" id="modelo" data-parte="tallo" data-titulo="El modelo">
+ <div class="cuerpo">
+  <p class="seccion">§3 · El modelo</p>
+  <h2>El modelo explica el {{r2_pct}} de las citas y encuentra a los artículos destacados {{lift}} veces mejor que el azar, pero no ve venir a los grandes éxitos</h2>
+  <p style="max-width:52em">Dos objetivos, con las mismas 12 columnas y la misma partición: cuántas citas (regresión sobre log(1 + citas), métrica MAE) y si el artículo termina en el
+  top 10 % (clasificación, métrica f1 macro, porque sólo el {{base}} es positivo y la accuracy no lo ve).</p>
+  <figure>
+   <div class="grafico" id="g-comparacion"></div>
+   <figcaption><b>Figura 3.</b> Comparación de familias en validación cruzada (punto: media; línea: ± un desvío entre folds; naranja: el elegido). (a) En regresión, Gradient Boosting
+   le gana a Ridge por más que el desvío y se elige. (b) En clasificación, con el umbral ajustado, la Regresión Logística ({{f1_log_cv}} ± {{f1_log_de}}) y Boosting
+   ({{f1_gb_cv}} ± {{f1_gb_de}}) empatan: se queda la logística, el modelo simple.</figcaption>
+  </figure>
+  <figure>
+   <div class="grafico" id="g-tramos"></div>
+   <figcaption><b>Figura 4.</b> Mediana de citas reales y predichas por el regresor en el test, por tramo de citas reales. En el medio acierta (tramo 10–19: real {{t1019_real}},
+   predicha {{t1019_pred}}), pero comprime los extremos: a los artículos sin citas les asigna ~{{cero_pred}} y a los que pasaron las 100 (mediana real {{hit_real}}) les da {{hit_pred}}.
+   Las columnas del día de publicación dicen que un artículo va a andar bien; que sea un éxito depende del hallazgo.</figcaption>
+  </figure>
+  <h3>Ordenados por la probabilidad del modelo, en el decil más alto el {{dec10}} fue top 10 %; en la mitad de abajo, el {{dec_bajos}}</h3>
+  <figure>
+   <div class="grafico" id="g-triage"></div>
+   <figcaption><b>Figura 5.</b> Artículos del test agrupados en deciles de probabilidad predicha por la Regresión Logística; la altura es el porcentaje que realmente fue
+   top 10 %. La línea punteada es la tasa al azar ({{base}}). El umbral de {{umbral}}, elegido en validación cruzada, marca como candidatos a los deciles naranjas:
+   el modelo funciona como un triage, no como un oráculo.</figcaption>
+  </figure>
+  <details><summary>Cómo lo sabemos <small>apéndice C</small></summary><div>
+    <h4>Métricas y piso</h4>
+    <p><b>Regresión:</b> MAE sobre log(1 + citas), que se lee como un factor multiplicativo de error (e<sup>MAE</sup>) y no deja que el 1 % de artículos con cientos de citas domine la pérdida.
+    Piso: <code>DummyRegressor</code> con la mediana (MAE {{mae_piso}} en el test). <b>Clasificación:</b> f1 macro, que promedia el f1 de las dos clases; el piso que contesta siempre «no»
+    tiene 88 % de accuracy y f1 macro {{f1_piso}}.</p>
+    <div class="ecuacion" role="math" aria-label="MAE igual al promedio del valor absoluto de log de uno más y menos y estimado"><span>MAE = <sup>1</sup>⁄<sub><var>n</var></sub> Σ<sub><var>i</var></sub> | log(1 + <var>y<sub>i</sub></var>) − <var>ŷ<sub>i</sub></var> |</span><span class="num">(1)</span></div>
+    <h4>Cómo se armó la validación</h4>
+    <p>Partición 80/20 estratificada por <code>is_top10_percent</code>, semilla 42. Todo se elige con 5 folds sobre el 80 % (<code>KFold</code> en regresión, <code>StratifiedKFold</code> en clasificación);
+    toda la preparación (log, indicadores de nulos, imputación, estandarización, one-hot) vive adentro de un <code>Pipeline</code> y se ajusta en cada fold. Como el uso previsto es sobre
+    revistas del catálogo conocido (el 87 % de los artículos del test es de revistas que aparecen en entrenamiento), la validación por artículo imita el uso; con <code>GroupKFold</code>
+    por revista, la ventaja de Boosting sobre Ridge baja de 0,020 a 0,010.</p>
+    <h4>Regresión: comparación de familias (CV)</h4>{{tabla_reg}}
+    <h4>Regresión: ajuste con GridSearchCV</h4>{{tabla_grilla}}
+    <p>Elegido: <code>HistGradientBoostingRegressor</code> ({{gb_params}}), MAE CV {{mae_cv}} ± {{desv_gb}}. Las 5 columnas «en observación» de la Entrega 2 bajan el MAE de Boosting en 0,010
+    (un 1 % en factor de error) a cambio de casi triplicar las columnas: no entran.</p>
+    <h4>Regresión: el test (mirado una sola vez)</h4>{{tabla_test_reg}}{{tabla_tramos}}
+    <h4>Clasificación: comparación de familias con umbral 0,50 (CV)</h4>{{tabla_clf}}
+    <h4>Clasificación: el desbalance, <code>class_weight</code> contra mover el umbral</h4>
+    <p>Para las mejores combinaciones de la grilla, con y sin <code>class_weight="balanced"</code>, el umbral se elige adentro de un <code>TunedThresholdClassifierCV</code> y se mide con validación cruzada anidada.</p>
+    {{tabla_desb}}
+    <h4>Clasificación: el test</h4>{{tabla_test_clf}}
+    <p>Matriz de confusión del modelo elegido (umbral {{umbral}}): {{tp}} de los {{pos_test}} artículos top 10 % del test detectados, {{fp}} falsas alarmas y {{fn}} que se le escaparon.
+    En el test Boosting da {{f1_otro}}: la diferencia es del orden de la variabilidad entre folds y la elección no se cambia mirando el test.</p>{{tabla_cm}}
+    <h4>En qué se apoya</h4>
+    <p>Importancia por permutación sobre el test y coeficientes estandarizados de los dos modelos lineales. Ninguna columna decide sola: <code>referenced_works_count</code> no es fuga
+    porque las referencias quedan fijas en el PDF al publicar (y dentro de una misma revista siguen correlacionando con las citas), y <code>source_pre_cites_per_work</code> se calculó sólo con trabajos de 2012–2018.</p>
+    {{tabla_imp}}{{tabla_coef}}
+    <h4>Cómo llega el modelo a esta página</h4>
+    <p>El clasificador elegido es una regresión logística: su fórmula (ecuación 2, en S2) se escribe dentro del gráfico de «Probá el modelo» con los coeficientes, las medianas de imputación y las
+    medias y desvíos del <code>StandardScaler</code> exportados por <code>build_app.py</code>, más el umbral {{umbral}}. El regresor elegido (Boosting) no se puede escribir en el navegador:
+    sus predicciones viajan precalculadas con los datos de «Explorá», y en «Probá» la estimación de citas usa Ridge, que queda peor (MAE CV {{mae_ridge_cv}} contra {{mae_cv}}; test
+    {{mae_ridge_test}} contra {{mae_test}}) y se muestra rotulada como aproximación.</p>
+    <h4>Qué cambió desde la Entrega 3</h4>
+    <p>El Objetivo 3 pasó de quintiles a terciles de citas (cortes en {{cortes}}), y el modelo por terciles usa los hiperparámetros que elige la grilla de la Sección 2.4 en vez de valores
+    escritos a mano. Con terciles, el regresor discretizado da f1 macro {{q_f1}} y kappa cuadrático {{q_kappa}} en el test.</p>{{tabla_q}}
+  </div></details>
+ </div>
+</section>
+
+<!-- ================= 5 · EXPLORÁ ================= -->
+<section class="hoja" id="explora" data-parte="copa" data-titulo="Explorá los artículos">
+ <div class="cuerpo">
+  <p class="seccion copa">S1 · Tu turno · Explorá</p>
+  <h2>Los {{n}} artículos, con lo que esperaba el modelo y lo que pasó</h2>
+  <p style="max-width:56em">Cada punto es un artículo: a lo ancho, las citas que esperaba el modelo; a lo alto, las que recibió. Sobre la diagonal punteada, acertó.
+  Achicá el universo con los controles, arrastrá un recuadro para ver cómo le fue al modelo en esa zona, y pasá el mouse o hacé clic en un punto para ver su ficha.
+  Ningún artículo lo predice un modelo que lo haya visto: los de entrenamiento salen de la validación cruzada y los del test, del modelo final.</p>
+  <div class="controles"><span id="c-subcampo"></span><span id="c-oa"></span><span id="c-part"></span><span id="c-prob"></span></div>
+  <figure>
+   <div class="grafico" id="g-explora"></div>
+   <div class="leyenda-col"><span><i style="background:#b9c7d6"></i>T1 · bajo</span><span><i style="background:#5b86b0"></i>T2 · medio</span>
+    <span><i style="background:#1d3a5f"></i>T3 · alto</span><span><i style="background:transparent;border:1.5px solid #c9552a;border-radius:50%"></i>fue top 10 %</span></div>
+   <figcaption><b>Figura S1.</b> Color: tercio de citas predicho. Borde naranja: artículos que fueron top 10 %. Ejes en escala logarítmica. A la derecha, el tercio real de los
+   artículos visibles según el tercio predicho, los aciertos de los candidatos y la ficha del artículo elegido.</figcaption>
+  </figure>
+ </div>
+</section>
+
+<!-- ================= 6 · PROBÁ ================= -->
+<section class="hoja" id="proba" data-parte="copa" data-titulo="Probá el modelo">
+ <div class="cuerpo">
+  <p class="seccion copa">S2 · Tu turno · Probá el modelo</p>
+  <h2>Cargá un artículo que todavía no salió y mirá si el modelo lo marcaría como candidato</h2>
+  <p class="aviso">El modelo sólo vio <b>artículos de Ciencia de Materiales publicados en revistas en 2019</b>. Para otro campo, otro año o algo que no sea un artículo de revista, la probabilidad no significa nada.</p>
+  <div class="ecuacion" role="math" aria-label="p igual a uno sobre uno más e a la menos beta cero más la suma de beta j por z j"><span><var>p</var>(top 10 %) = 1 ⁄ (1 + e<sup>−(β<sub>0</sub> + Σ<sub><var>j</var></sub> β<sub><var>j</var></sub> <var>z<sub>j</sub></var>)</sup>)</span><span class="num">(2)</span></div>
+  <p class="nota" style="max-width:60em">Cada <var>z<sub>j</sub></var> es una columna del pipeline (en log(1 + x), estandarizada) y cada β<sub><var>j</var></sub>, su coeficiente en la Regresión Logística entrenada.
+  La cuenta se hace adentro del gráfico: no se reentrena nada. Candidato si <var>p</var> ≥ {{umbral}}. Los deslizadores van del mínimo del entrenamiento al percentil 99,5, así que no se pueden cargar valores que el modelo nunca vio.</p>
+  <div class="ejemplo"><label for="ej">Partir de un artículo real del test:</label>
+    <select id="ej"><option value="">—</option>{{opciones_ejemplos}}</select>
+    <button type="button" class="boton" id="mediana">Volver al artículo típico</button></div>
+  <div class="probar">
+    <div class="deslizadores">
+      <fieldset><legend>La revista</legend><div class="slot" id="d-source_pre_cites_per_work"></div><div class="slot" id="d-sinrev"></div>
+        <div class="slot" id="d-core"></div><div class="slot" id="d-pubmed"></div><div class="slot" id="d-oa"></div></fieldset>
+      <fieldset><legend>El artículo</legend><div class="slot" id="d-referenced_works_count"></div><div class="slot" id="d-funders_count"></div></fieldset>
+      <fieldset><legend>Los autores y sus instituciones</legend><div class="slot" id="d-authors_count"></div><div class="slot" id="d-institutions_count"></div>
+        <div class="slot" id="d-institution_max_h_index"></div><div class="slot" id="d-last_author_pre_cites"></div><div class="slot" id="d-first_author_pre_cites"></div></fieldset>
+    </div>
+    <div class="resultado" aria-live="polite"><div class="grafico" id="g-proba"></div>
+      <p id="dijo"></p>
+      <p class="nota">Punto de partida: la mediana del entrenamiento en cada columna. Si las instituciones son 0, el índice h se imputa con la mediana, igual que en el pipeline.
+      Las citas esperadas usan Ridge, la aproximación lineal (apéndice C).</p></div>
+  </div>
+ </div>
+</section>
+
+<!-- ================= 7 · REFERENCIAS ================= -->
+<section class="hoja" id="referencias" data-parte="fin" data-titulo="Referencias">
+ <div class="cuerpo">
+  <p class="seccion">Disponibilidad de datos y código</p>
+  <h2>Todo lo que muestra este documento se regenera con un solo comando</h2>
+  <div class="dos-col">
+   <p class="capitular">El script <code>build_app.py</code> toma el CSV que produce el pipeline de Airflow, ejecuta celda por celda el notebook de la Entrega 3 con la semilla 42,
+   calcula las predicciones fuera de muestra, exporta los coeficientes de la Regresión Logística y de Ridge, arma las siete figuras con Altair y escribe esta página.
+   Si los datos se actualizan, correrlo de nuevo actualiza la aplicación, y los números coinciden con los del notebook porque salen de su ejecución.</p>
+   <p>Las predicciones de «Explorá» viajan con los datos; las de «Probá» se calculan en el navegador con la ecuación (2). Lo que no se puede escribir en el navegador
+   (el Gradient Boosting de la regresión) se reemplaza en «Probá» por Ridge, con su diferencia de error declarada en el apéndice C.</p>
+  </div>
+  <p class="seccion" style="margin-top:22px">Referencias</p>
+  <ol class="referencias">
+   <li>[1] Priem, J., Piwowar, H. y Orr, R. (2022). OpenAlex: A fully-open index of scholarly works, authors, venues, institutions, and concepts. <i>arXiv:2205.01833</i>.</li>
+   <li>[2] Pedregosa, F. et al. (2011). Scikit-learn: Machine Learning in Python. <i>Journal of Machine Learning Research</i>, 12, 2825–2830.</li>
+   <li>[3] VanderPlas, J. et al. (2018). Altair: Interactive Statistical Visualizations for Python. <i>Journal of Open Source Software</i>, 3(32), 1057.</li>
+   <li>[4] Satyanarayan, A., Moritz, D., Wongsuphasawat, K. y Heer, J. (2017). Vega-Lite: A Grammar of Interactive Graphics. <i>IEEE TVCG</i>, 23(1), 341–350.</li>
+   <li>[5] Cátedra de Ciencia de Datos, UTN FRM (2026). Proyecto Integrador: instructivos de las Entregas 1 a 4.</li>
+  </ol>
+  <p class="nota">Datos: OpenAlex (CC0). Generado por <code>build_app.py</code> el {{fecha_build}}. Grupo 10 · 5K09 · UTN FRM.</p>
+ </div>
+</section>
+
+<div class="pie-doc">— fin —</div>
+</main>
+</div>
+
+<script>
+const OPC = {actions: false, renderer: "canvas",
+  formatLocale: {decimal: ",", thousands: ".", grouping: [3], currency: ["$", ""], percent: " %"}};
+const SPECS = {{SPECS}};
+const EJEMPLOS = {{EJEMPLOS}};
+const MEDIANAS = {{MEDIANAS}};
+const vistas = {};
+const dibujos = Object.entries(SPECS).map(([id, spec]) =>
+  vegaEmbed("#" + id, spec, OPC).then(r => { vistas[id] = r.view; }).catch(e => {
+    document.getElementById(id).innerHTML = "<p class='nota'>No se pudo dibujar la figura: " + e + "</p>";
+  }));
+// las figuras cambian la altura de la página al dibujarse: si se entró con #sección, volver a ubicarla
+Promise.all(dibujos).then(() => {
+  const destino = location.hash && document.getElementById(location.hash.slice(1));
+  if (destino) destino.scrollIntoView({behavior: "instant", block: "start"});
+});
+
+/* ---------- Probá el modelo: ejemplos ---------- */
+function cargar(valores) {
+  const v = vistas["g-proba"]; if (!v) return;
+  for (const [k, x] of Object.entries(valores)) { try { v.signal(k, x); } catch (e) {} }
+  v.runAsync();
+}
+const INICIAL = Object.assign({}, MEDIANAS, {p_oa: "closed", p_core: true, p_pubmed: false, p_sinrev: false});
+document.getElementById("ej").addEventListener("change", e => {
+  const i = e.target.value, dijo = document.getElementById("dijo");
+  if (i === "") { dijo.textContent = ""; return; }
+  cargar(EJEMPLOS[i].valores);
+  dijo.textContent = "Para este artículo, el modelo final había dado " + Math.round(100 * EJEMPLOS[i].prob_modelo) + " %.";
+});
+document.getElementById("mediana").addEventListener("click", () => {
+  document.getElementById("ej").value = ""; document.getElementById("dijo").textContent = ""; cargar(INICIAL);
+});
+
+/* ---------- índice: marcar la sección que se está leyendo ---------- */
+const enlaces = [...document.querySelectorAll(".indice-lat a")];
+function marcar(id) { enlaces.forEach(a => a.setAttribute("aria-current", a.getAttribute("href") === "#" + id ? "true" : "false")); }
+const obs = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) marcar(e.target.id === "referencias" ? "proba" : e.target.id);
+}), {rootMargin: "-30% 0px -65% 0px"});
+document.querySelectorAll(".hoja").forEach(x => obs.observe(x));
+marcar(location.hash.slice(1) || "portada");
+</script>
+</body>
+</html>

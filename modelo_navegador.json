@@ -1,0 +1,310 @@
+{
+ "logistica": {
+  "num": [
+   {
+    "nombre": "log_source_pre_cites_per_work",
+    "mediana": 3.432546165063865,
+    "media": 3.06349612866995,
+    "escala": 1.1965092253152743,
+    "coef": 1.834802752524845
+   },
+   {
+    "nombre": "log_referenced_works_count",
+    "mediana": 3.6375861597263857,
+    "media": 3.206250086411525,
+    "escala": 1.3109680745749237,
+    "coef": 1.9701994943100714
+   },
+   {
+    "nombre": "log_funders_count",
+    "mediana": 0.6931471805599453,
+    "media": 0.6888125798417501,
+    "escala": 0.628031836911066,
+    "coef": 0.07855857736418931
+   },
+   {
+    "nombre": "log_last_author_pre_cites",
+    "mediana": 7.864035585221608,
+    "media": 7.2563114946190925,
+    "escala": 2.576656224518822,
+    "coef": 0.22404636815587414
+   },
+   {
+    "nombre": "log_first_author_pre_cites",
+    "mediana": 5.3867833963027945,
+    "media": 4.852543863927705,
+    "escala": 2.6285401095329664,
+    "coef": 0.20457215580506036
+   },
+   {
+    "nombre": "log_institution_max_h_index",
+    "mediana": 6.410174881966167,
+    "media": 6.2762862557298025,
+    "escala": 0.903695906010061,
+    "coef": -0.19395323797694927
+   },
+   {
+    "nombre": "log_institutions_count",
+    "mediana": 1.0986122886681098,
+    "media": 1.0774464161910573,
+    "escala": 0.521026129642791,
+    "coef": 0.039643085316650395
+   },
+   {
+    "nombre": "log_authors_count",
+    "mediana": 1.791759469228055,
+    "media": 1.7275544984382525,
+    "escala": 0.478866945270869,
+    "coef": 0.22566616653663937
+   },
+   {
+    "nombre": "sin_dato_revista",
+    "mediana": 0.0,
+    "media": 0.009200968523002421,
+    "escala": 0.09547937317159731,
+    "coef": 0.20932015529007258
+   },
+   {
+    "nombre": "sin_dato_ultimo_autor",
+    "mediana": 0.0,
+    "media": 0.09055690072639225,
+    "escala": 0.28697795813829086,
+    "coef": 0.07021776091996289
+   },
+   {
+    "nombre": "sin_dato_primer_autor",
+    "mediana": 0.0,
+    "media": 0.043583535108958835,
+    "escala": 0.2041666245407535,
+    "coef": 0.005243417656966754
+   },
+   {
+    "nombre": "sin_instituciones",
+    "mediana": 0.0,
+    "media": 0.0711864406779661,
+    "escala": 0.2571360172001746,
+    "coef": -0.0032167275511142852
+   },
+   {
+    "nombre": "sin_referencias",
+    "mediana": 0.0,
+    "media": 0.10387409200968523,
+    "escala": 0.3050971402993622,
+    "coef": 0.9959975190558628
+   },
+   {
+    "nombre": "source_is_core",
+    "mediana": 1.0,
+    "media": 0.8391041162227603,
+    "escala": 0.36743488996117485,
+    "coef": 0.4822716826188842
+   },
+   {
+    "nombre": "in_pubmed",
+    "mediana": 0.0,
+    "media": 0.3204600484261501,
+    "escala": 0.46665341077598443,
+    "coef": -0.06671888170490776
+   }
+  ],
+  "oa": {
+   "bronze": -0.5234955817628755,
+   "closed": -0.5325037075172617,
+   "diamond": 0.0034265185106052234,
+   "gold": -0.5812144696031601,
+   "green": -0.9551598956137866,
+   "hybrid": -0.7335262376072763
+  },
+  "intercepto": -3.377450911911346
+ },
+ "ridge": {
+  "num": [
+   {
+    "nombre": "log_source_pre_cites_per_work",
+    "mediana": 3.432546165063865,
+    "media": 3.06349612866995,
+    "escala": 1.1965092253152743,
+    "coef": 0.592147300916757
+   },
+   {
+    "nombre": "log_referenced_works_count",
+    "mediana": 3.6375861597263857,
+    "media": 3.206250086411525,
+    "escala": 1.3109680745749237,
+    "coef": 0.6970487568699154
+   },
+   {
+    "nombre": "log_funders_count",
+    "mediana": 0.6931471805599453,
+    "media": 0.6888125798417501,
+    "escala": 0.628031836911066,
+    "coef": 0.048963232666857204
+   },
+   {
+    "nombre": "log_last_author_pre_cites",
+    "mediana": 7.864035585221608,
+    "media": 7.2563114946190925,
+    "escala": 2.576656224518822,
+    "coef": 0.0485762001936211
+   },
+   {
+    "nombre": "log_first_author_pre_cites",
+    "mediana": 5.3867833963027945,
+    "media": 4.852543863927705,
+    "escala": 2.6285401095329664,
+    "coef": 0.05141185568141862
+   },
+   {
+    "nombre": "log_institution_max_h_index",
+    "mediana": 6.410174881966167,
+    "media": 6.2762862557298025,
+    "escala": 0.903695906010061,
+    "coef": -0.05378387652499583
+   },
+   {
+    "nombre": "log_institutions_count",
+    "mediana": 1.0986122886681098,
+    "media": 1.0774464161910573,
+    "escala": 0.521026129642791,
+    "coef": 0.01836971131514004
+   },
+   {
+    "nombre": "log_authors_count",
+    "mediana": 1.791759469228055,
+    "media": 1.7275544984382525,
+    "escala": 0.478866945270869,
+    "coef": 0.09879866471264878
+   },
+   {
+    "nombre": "sin_dato_revista",
+    "mediana": 0.0,
+    "media": 0.009200968523002421,
+    "escala": 0.09547937317159731,
+    "coef": -0.06613723173306471
+   },
+   {
+    "nombre": "sin_dato_ultimo_autor",
+    "mediana": 0.0,
+    "media": 0.09055690072639225,
+    "escala": 0.28697795813829086,
+    "coef": -0.00851146356976168
+   },
+   {
+    "nombre": "sin_dato_primer_autor",
+    "mediana": 0.0,
+    "media": 0.043583535108958835,
+    "escala": 0.2041666245407535,
+    "coef": -0.006957655909810441
+   },
+   {
+    "nombre": "sin_instituciones",
+    "mediana": 0.0,
+    "media": 0.0711864406779661,
+    "escala": 0.2571360172001746,
+    "coef": 0.04447283494111638
+   },
+   {
+    "nombre": "sin_referencias",
+    "mediana": 0.0,
+    "media": 0.10387409200968523,
+    "escala": 0.3050971402993622,
+    "coef": 0.26035254275665376
+   },
+   {
+    "nombre": "source_is_core",
+    "mediana": 1.0,
+    "media": 0.8391041162227603,
+    "escala": 0.36743488996117485,
+    "coef": -0.03747803692590852
+   },
+   {
+    "nombre": "in_pubmed",
+    "mediana": 0.0,
+    "media": 0.3204600484261501,
+    "escala": 0.46665341077598443,
+    "coef": 0.03620537083571645
+   }
+  ],
+  "oa": {
+   "bronze": -0.1830382849729445,
+   "closed": 0.03404084419265333,
+   "diamond": 0.03746667589395513,
+   "gold": 0.09217285461895444,
+   "green": -0.059717570158952626,
+   "hybrid": 0.07907548042632612
+  },
+  "intercepto": 2.475422022300319
+ },
+ "umbral": 0.31,
+ "cortes_tercil_ridge": [
+  2.282245654563382,
+  3.142417275035386
+ ],
+ "rangos": {
+  "source_pre_cites_per_work": {
+   "min": 0.0,
+   "max": 165.0,
+   "max_visto": 237.71473278767454,
+   "paso": 0.5,
+   "mediana": 29.95535994970135
+  },
+  "referenced_works_count": {
+   "min": 0.0,
+   "max": 228.0,
+   "max_visto": 516.0,
+   "paso": 1,
+   "mediana": 37.0
+  },
+  "funders_count": {
+   "min": 0.0,
+   "max": 9.0,
+   "max_visto": 14.0,
+   "paso": 1,
+   "mediana": 1.0
+  },
+  "last_author_pre_cites": {
+   "min": 0.0,
+   "max": 98270.0,
+   "max_visto": 354985.0,
+   "paso": 10,
+   "mediana": 2601.0
+  },
+  "first_author_pre_cites": {
+   "min": 0.0,
+   "max": 18170.0,
+   "max_visto": 103231.0,
+   "paso": 10,
+   "mediana": 217.5
+  },
+  "institution_max_h_index": {
+   "min": 1.0,
+   "max": 2680.0,
+   "max_visto": 3540.0,
+   "paso": 1,
+   "mediana": 607.0
+  },
+  "institutions_count": {
+   "min": 0.0,
+   "max": 10.0,
+   "max_visto": 20.0,
+   "paso": 1,
+   "mediana": 2.0
+  },
+  "authors_count": {
+   "min": 1.0,
+   "max": 17.0,
+   "max_visto": 28.0,
+   "paso": 1,
+   "mediana": 5.0
+  }
+ },
+ "oa_categorias": [
+  "bronze",
+  "closed",
+  "diamond",
+  "gold",
+  "green",
+  "hybrid"
+ ],
+ "tasa_base": 0.11949152542372882
+}
