@@ -230,7 +230,7 @@ tbody tr:nth-child(even) td { background: rgba(28,27,25,.025); }
   <div class="tallo"><h3>La historia</h3><ol>
     <li><a href="#portada">El proyecto</a></li>
     <li><a href="#datos">Los datos</a></li>
-    <li><a href="#hallazgos">Lo que encontramos</a></li>
+    <li><a href="#hallazgos">Qué anticipa las citas</a></li>
     <li><a href="#modelo">El modelo</a></li>
     <li><a href="#balance">Lo que logramos</a></li></ol></div>
   <div class="copa"><h3>Tu turno</h3><ol>
@@ -260,8 +260,8 @@ tbody tr:nth-child(even) td { background: rgba(28,27,25,.025); }
   desde su publicación hasta octubre de 2026, y para cada uno miramos sólo lo que se sabía el día que salió: la revista, la bibliografía, los autores y sus instituciones.
   Empezamos queriendo predecir el número de citas. No alcanzó: el número exacto depende de cosas que el día de la publicación no se ven.
   Pero en el camino encontramos dos preguntas más gruesas que sí se pueden contestar, y para cada una entrenamos un modelo con las mismas 12 columnas.</p></div>
-  <p class="tesis">Cuántas citas va a tener un artículo no se puede adivinar el día que sale, pero sí si va a ser poco o muy citado:
-  el modelo acierta el tercio de citas del {{q_acc}} de los artículos y casi nunca confunde uno poco citado con uno muy citado.</p>
+  <p class="tesis">En parte: no cuántas citas va a tener, pero sí en qué grupo va a caer:
+  el modelo acierta en 2 de cada 3 artículos y casi nunca confunde uno poco citado con uno muy citado.</p>
   <div class="destacados" role="list">
     <div role="listitem"><b>×{{factor}}</b><span>es el error típico al predecir el número de citas: a un artículo con 20 lo puede estimar en 10 o en 40. La pregunta original queda a medias.</span></div>
     <div role="listitem"><b>{{q_acc}}</b><span>de los artículos del test cae en el tercio de citas que predijo el modelo, contra el {{q_piso_acc}} del piso. Sólo el {{ter_ext}} salta de un extremo al otro.</span></div>
@@ -276,7 +276,7 @@ tbody tr:nth-child(even) td { background: rgba(28,27,25,.025); }
     <li><span class="etapa">Entrega 2 · el análisis</span><h4>Entender qué se predice</h4>
       <p>Las citas se concentran en pocos artículos, y lo que más las anticipa es la revista y la bibliografía.</p>
       <p class="prob"><b>Problema:</b> una distribución tan desigual no se puede modelar en crudo. Pasamos a log(1 + citas) y a tercios de igual tamaño.</p>
-      <a href="#hallazgos">→ §2 Lo que encontramos</a></li>
+      <a href="#hallazgos">→ §2 Qué anticipa las citas</a></li>
     <li><span class="etapa">Entrega 3 · el modelo</span><h4>Intentar predecir</h4>
       <p>El regresor explica el {{r2_pct}} de la variación, pero comprime los extremos: no ve venir a los artículos exitosos.</p>
       <p class="prob"><b>Problema:</b> el número exacto no sale. Cambiamos la pregunta: ¿poco o muy citado? ¿entre los destacados? Y ajustamos el umbral porque sólo el {{base}} es top 10 %.</p>
@@ -330,34 +330,38 @@ tbody tr:nth-child(even) td { background: rgba(28,27,25,.025); }
 </section>
 
 <!-- ================= 3 · HALLAZGOS ================= -->
-<section class="hoja" id="hallazgos" data-parte="tallo" data-titulo="Lo que encontramos">
+<section class="hoja" id="hallazgos" data-parte="tallo" data-titulo="Qué anticipa las citas">
  <div class="cuerpo">
-  <p class="seccion">§2 · Lo que encontramos</p>
-  <h2>La revista y la bibliografía se suman: con las dos en el quintil alto, el {{esq_alta}} de los artículos es top 10 %; con las dos en el bajo, el {{esq_baja}}</h2>
+  <p class="seccion">§2 · Qué anticipa las citas</p>
+  <h2>Dos pistas que se suman: con una revista muy citada y una bibliografía larga, el {{h_dos}} de los artículos termina en el tercio alto</h2>
   <p class="lead">Si las citas no se conocen el día de la publicación, ¿qué sí se conoce? La revista, la bibliografía, los autores y sus instituciones.
-  En el análisis pusimos a prueba varias hipótesis sobre esas columnas, y dos se destacaron sobre el resto: el prestigio que la revista traía de antes
-  y la cantidad de referencias del artículo. Lo importante es que no dicen lo mismo.</p>
-  <p class="mirar"><b>Qué mirar.</b> Recorré el cuadro desde la esquina de abajo a la izquierda hasta la de arriba a la derecha: de {{esq_baja}} a {{esq_alta}}.
-  Y dentro de una misma columna (misma revista), subir de fila sigue sumando: la bibliografía agrega algo que la revista no dice.</p>
+  De todas esas columnas, las dos que más acompañan a las citas son el prestigio que la revista traía de antes y la cantidad de referencias del artículo.
+  Están relacionadas entre sí, pero una no reemplaza a la otra: cada una sola lleva al tercio alto a cerca de un tercio de los artículos; juntas, al {{h_dos}}.</p>
+  <p class="mirar"><b>Qué mirar.</b> La línea punteada es el promedio: un tercio de los artículos está en el tercio alto. Sin ninguna de las dos pistas, casi ninguno llega ({{h_ninguna}}).
+  Con una sola, el grupo queda cerca del promedio ({{h_bib}} y {{h_rev}}). Con las dos, lo duplica.</p>
   <figure>
    <div class="grafico" id="g-hallazgo"></div>
-   <figcaption><b>Figura 2.</b> Porcentaje de artículos que terminaron en el 10 % más citado de su subtema y año (según OpenAlex), por quintil de prestigio previo de la
-   revista (columnas) y de cantidad de referencias (filas). En toda la población es el {{top10}}.</figcaption>
+   <figcaption><b>Figura 2.</b> Porcentaje de artículos en el tercio más citado (los mismos tercios de la Figura 1) según dos datos que se conocen el día de publicación:
+   el prestigio previo de la revista (citas por trabajo en 2012–2018) y la cantidad de referencias del artículo. «Revista muy citada» y «bibliografía larga» son el tercio alto de cada variable;
+   «ninguna» son las dos en el tercio bajo. Al lado de cada barra, cuántos artículos hay en el grupo. La grilla completa, con los niveles intermedios, está en el apéndice B.</figcaption>
   </figure>
   <p class="puente">Esto le da al modelo de dónde agarrarse: son las dos columnas que más pesan en los tres modelos (§3). Pero también anticipa su límite:
-  aun en la mejor celda, sólo el {{esq_alta}} llega al top 10 %. Lo que hace exitoso a un artículo está, sobre todo, en su contenido.</p>
+  aun con las dos pistas a favor, el {{h_dos_no}} de los artículos no llega al tercio alto. Lo que falta probablemente está en el contenido del artículo, que estas columnas no ven.</p>
   <details><summary>Cómo lo sabemos <small>apéndice B</small></summary><div>
-    <h4>Una hipótesis que se sostuvo (H2): el efecto del acceso abierto depende de si la revista es <em>core</em></h4>
+    <h4>La grilla completa</h4>
+    <p>Cada variable se parte en tres tercios de igual tamaño (empates partidos por orden): para la revista, cortes en {{h_cortes_rev}} citas por trabajo; para la bibliografía, en {{h_cortes_bib}} referencias.
+    En cualquier fila, pasar de bibliografía corta a larga sube mucho la proporción; en cualquier columna, pasar de revista poco citada a muy citada también. Los artículos sin historial de revista
+    ({{h_sin_rev}}) quedan afuera. Los dos grupos con una sola pista son los más chicos (desde {{h_n_chico}} artículos), porque las dos variables tienden a ir juntas.</p>
+    {{tabla_hallazgo}}
+    <p>Spearman con las citas: {{rho_prest}} para el prestigio y {{rho_refs}} para las referencias.</p>
+    <h4>Otras hipótesis del análisis</h4>
+    <h4>Una que se sostuvo (H2): el efecto del acceso abierto depende de si la revista es <em>core</em></h4>
     <p>El tipo de acceso abierto (<code>oa_status</code>) solo explica η² = {{eta_oa}} de la varianza de log(1 + citas); cruzado con <code>source_is_core</code> sube a η² = {{eta_oa_core}}.
     En las revistas <em>core</em> el {{core_top}} de los artículos es top 10 %, contra el {{nocore_top}} fuera de ellas. En el modelo multivariado la interacción explícita no suma
     (cambio de MAE −0,0002 ± 0,0006 en Ridge): el prestigio continuo de la revista ya captura ese escalón.</p>
     <h4>Una que no (H4): el mes de publicación no cambia las citas</h4>
     <p>Esperábamos que los artículos de enero, con casi un año más de exposición, acumularan más citas. No pasa: la correlación de Spearman entre mes y citas es
     ρ = {{rho_mes}}, y la mediana de enero ({{mes_ene}} citas) es prácticamente la de diciembre ({{mes_dic}}). Con más de seis años de exposición, unos meses no se ven.</p>
-    <h4>Cómo se construyó la figura</h4>
-    <p>Quintiles sobre el rango de cada variable (empates partidos por orden, para que cada quintil tenga el 20 % exacto). Los artículos sin historial de revista
-    (1 %) quedan afuera de esta vista. Spearman con las citas: {{rho_prest}} para el prestigio y {{rho_refs}} para las referencias. La escala de color se corta en 50 %.
-    <code>is_top10_percent</code> lo calcula OpenAlex comparando cada artículo con los de su mismo subtema y año: por eso un artículo con pocas citas puede ser top 10 % en un nicho chico.</p>
   </div></details>
  </div>
 </section>

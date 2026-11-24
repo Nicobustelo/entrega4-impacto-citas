@@ -257,40 +257,55 @@ def g_datos(datos):
     return alt.hconcat(barras, lado, spacing=36).resolve_scale(color="shared")
 
 
-def g_hallazgo(g):
-    df = g["df"]
-    q = 5
-    prest = pd.qcut(df["source_pre_cites_per_work"].rank(method="first"), q, labels=False)
-    refs = pd.qcut(df["referenced_works_count"].rank(method="first"), q, labels=False)
-    tab = df.assign(qp=prest, qr=refs).dropna(subset=["qp"])
-    agg = tab.groupby(["qp", "qr"]).agg(top=("is_top10_percent", "mean"), n=("is_top10_percent", "size"),
-                                         mediana=("cited_by_count", "median")).reset_index()
-    lim_p = df["source_pre_cites_per_work"].quantile(np.linspace(0, 1, q + 1)).values
-    lim_r = df["referenced_works_count"].quantile(np.linspace(0, 1, q + 1)).values
-    agg["prestigio"] = agg["qp"].astype(int).map(lambda i: f"Q{i + 1}: {fmt(lim_p[i], 0)}–{fmt(lim_p[i + 1], 0)}")
-    agg["bibliografia"] = agg["qr"].astype(int).map(lambda i: f"Q{i + 1}: {int(lim_r[i])}–{int(lim_r[i + 1])}")
-    orden_p = sorted(agg["prestigio"].unique(), key=lambda s: int(s[1]))
-    orden_r = sorted(agg["bibliografia"].unique(), key=lambda s: -int(s[1]))
-    base = alt.Chart(agg).encode(
-        x=alt.X("prestigio:O", sort=orden_p, title="prestigio previo de la revista (citas por trabajo 2012–2018, quintiles)",
-                axis=alt.Axis(labelAngle=0)),
-        y=alt.Y("bibliografia:O", sort=orden_r, title="referencias del artículo (quintiles)"),
-    )
-    celdas = base.mark_rect(stroke=FONDO, strokeWidth=2).encode(
-        color=alt.Color("top:Q", title="% top 10 %", scale=alt.Scale(scheme="oranges", domain=[0, 0.5], clamp=True),
-                        legend=alt.Legend(format=".0%", orient="right", gradientLength=200)),
-        tooltip=[alt.Tooltip("prestigio:O", title="prestigio"), alt.Tooltip("bibliografia:O", title="referencias"),
-                 alt.Tooltip("top:Q", title="% top 10 %", format=".1%"), alt.Tooltip("mediana:Q", title="mediana de citas"),
+def g_hallazgo(datos):
+    """Figura 2: % de artículos en el tercio alto de citas según dos pistas del día de publicación.
+
+    La revista (prestigio previo) y la bibliografía (cantidad de referencias) se parten en tercios de igual tamaño.
+    El gráfico compara los extremos: ninguna pista alta, una sola o las dos. La grilla completa de 3 × 3 va al apéndice B.
+    """
+    d = datos.dropna(subset=["prestigio"])
+    nivel_rev = pd.qcut(d["prestigio"].rank(method="first"), 3, labels=False)
+    nivel_bib = pd.qcut(d["refs"].rank(method="first"), 3, labels=False)
+    alto = d["tercil_real"] == "T3 · alto"
+    grilla = pd.DataFrame({"rev": nivel_rev, "bib": nivel_bib, "alto": alto}).groupby(["rev", "bib"])["alto"].agg(["mean", "size"])
+    base = alto.mean()
+
+    grupos = [("Ninguna de las dos", 0, 0), ("Sólo bibliografía larga", 0, 2), ("Sólo revista muy citada", 2, 0), ("Las dos", 2, 2)]
+    barras = pd.DataFrame([{"grupo": nom, "t3": grilla.loc[(r, b), "mean"], "n": int(grilla.loc[(r, b), "size"]), "dos": r + b == 4}
+                           for nom, r, b in grupos])
+    orden = [g[0] for g in grupos]
+    y = alt.Y("grupo:N", sort=orden, title=None, axis=alt.Axis(labelLimit=320, domain=False, ticks=False, labelPadding=8))
+    x = alt.X("t3:Q", scale=alt.Scale(domain=[0, 1]), axis=alt.Axis(format=".0%", tickCount=5), title="artículos en el tercio más citado")
+    base_b = alt.Chart(barras).encode(y=y, x=x)
+    rect = base_b.mark_bar(height=30, cornerRadiusEnd=2).encode(
+        color=alt.Color("dos:N", scale=alt.Scale(domain=[False, True], range=[COL_TERCIL["T2 · medio"], COL_TERCIL["T3 · alto"]]), legend=None),
+        tooltip=[alt.Tooltip("grupo:N", title="grupo"), alt.Tooltip("t3:Q", title="en el tercio alto", format=".1%"),
                  alt.Tooltip("n:Q", title="artículos", format=",d")],
     )
-    texto = base.mark_text(fontSize=12, fontWeight=600).encode(
-        text=alt.Text("top:Q", format=".0%"),
-        color=alt.condition("datum.top > 0.25", alt.value("white"), alt.value(TINTA)),
-    )
-    graf = (celdas + texto).properties(width=560, height=300)
-    esq_alta = agg.loc[(agg.qp == q - 1) & (agg.qr == q - 1), "top"].iloc[0]
-    esq_baja = agg.loc[(agg.qp == 0) & (agg.qr == 0), "top"].iloc[0]
-    return graf, esq_alta, esq_baja
+    valor = base_b.mark_text(align="left", dx=6, fontSize=14, fontWeight=600, color=TINTA).encode(text=alt.Text("t3:Q", format=".0%"))
+    cuantos = base_b.mark_text(align="left", dx=50, fontSize=12, color="#8a857a", font="IBM Plex Mono, monospace").encode(
+        text=alt.Text("n:Q", format=",d"))
+    ref = pd.DataFrame({"x": [base], "t": [f"promedio: {pct(base, 0)}"]})
+    linea = alt.Chart(ref).mark_rule(strokeDash=[4, 3], color=TENUE).encode(x="x:Q")
+    rotulo = alt.Chart(ref).mark_text(y=-8, align="left", dx=4, fontSize=12, fontStyle="italic", color=TENUE).encode(x="x:Q", text="t:N")
+    graf = (rect + valor + cuantos + linea + rotulo).properties(width=520, height=210)
+
+    # Grilla completa (apéndice B)
+    rev_nom = ["poco citada", "media", "muy citada"]
+    bib_nom = ["corta", "media", "larga"]
+    tabla = pd.DataFrame({f"bibliografía {bib_nom[b]}": [f"{pct(grilla.loc[(r, b), 'mean'], 1)} ({fmt(grilla.loc[(r, b), 'size'], 0)})"
+                                                           for r in range(3)] for b in range(3)},
+                         index=pd.Index([f"revista {n}" for n in rev_nom], name="% en el tercio alto (artículos)"))
+    lim_rev = d["prestigio"].quantile([1 / 3, 2 / 3]).values
+    lim_bib = d["refs"].quantile([1 / 3, 2 / 3]).values
+    textos = {
+        "h_ninguna": pct(barras.t3[0], 0), "h_bib": pct(barras.t3[1], 0), "h_rev": pct(barras.t3[2], 0), "h_dos": pct(barras.t3[3], 0),
+        "h_dos_no": pct(1 - barras.t3[3], 0), "h_base": pct(base, 0),
+        "h_cortes_rev": " y ".join(fmt(v, 0) for v in lim_rev), "h_cortes_bib": " y ".join(fmt(v, 0) for v in lim_bib),
+        "h_sin_rev": pct(1 - len(d) / len(datos), 0), "h_n_chico": fmt(min(barras.n[1], barras.n[2]), 0),
+        "tabla_hallazgo": tabla_html(tabla),
+    }
+    return graf, textos
 
 
 def g_tramos(g):
@@ -688,7 +703,7 @@ def tabla_html(df, formatos=None, indice=True):
             + "".join(filas) + "</tbody></table></div>")
 
 
-def calcular_textos(g, datos, esq_alta, esq_baja, m):
+def calcular_textos(g, datos, m):
     from scipy.stats import spearmanr
     from sklearn.metrics import confusion_matrix
 
@@ -727,7 +742,6 @@ def calcular_textos(g, datos, esq_alta, esq_baja, m):
     T["top10"] = pct(df["is_top10_percent"].mean())
 
     # Hallazgos
-    T["esq_alta"], T["esq_baja"] = pct(esq_alta, 0), pct(esq_baja, 0)
     T["rho_prest"] = fmt(spearmanr(df["source_pre_cites_per_work"], c, nan_policy="omit").statistic, 2)
     T["rho_refs"] = fmt(spearmanr(df["referenced_works_count"], c).statistic, 2)
     T["rho_mes"] = fmt(spearmanr(df["publication_month"], c, nan_policy="omit").statistic, 3)
@@ -886,7 +900,7 @@ def construir(ruta_nb: Path, ruta_datos: Path, salida: Path):
     print("Calculando predicciones fuera de muestra …")
     datos, _ = preparar_datos(g)
     modelos = exportar_modelos(g)
-    graf_hall, esq_alta, esq_baja = g_hallazgo(g)
+    graf_hall, textos_hall = g_hallazgo(datos)
     specs = {
         "g-datos": g_datos(datos),
         "g-hallazgo": graf_hall,
@@ -898,7 +912,8 @@ def construir(ruta_nb: Path, ruta_datos: Path, salida: Path):
         "g-proba": g_proba(modelos),
     }
     specs = {k: v.to_dict() for k, v in specs.items()}
-    T = calcular_textos(g, datos, esq_alta, esq_baja, modelos)
+    T = calcular_textos(g, datos, modelos)
+    T.update(textos_hall)
     T["fecha_datos"] = time.strftime("%d/%m/%Y", time.localtime(ruta_datos.resolve().stat().st_mtime))
     T["fecha_build"] = time.strftime("%d/%m/%Y")
     T["slider_tope"] = fmt(modelos["rangos"]["referenced_works_count"]["max"], 0)
